@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<template>
+    <name>mapper</name>
+    <filePath>src/main/java/${packageName}/${moduleName}/${subModuleName}/mapper</filePath>
+    <fileName>${ClassName}Mapper.java</fileName>
+    <content><![CDATA[
+/**
+ * Copyright &copy; 2015-2020 <a href="http://www.qdbak.com/">青岛佰安客科技有限公司</a> All rights reserved.
+ */
+package ${packageName}.${moduleName}<#if subModuleName != "">.${subModuleName}</#if>.mapper;
+
+import com.jeeplus.core.persistence.BaseMapper;
+import com.jeeplus.core.persistence.annotation.MyBatisMapper;
+import ${packageName}.${moduleName}<#if subModuleName != "">.${subModuleName}</#if>.entity.${ClassName};
+
+/**
+ * ${functionName}MAPPER接口
+ * @author ${functionAuthor}
+ * @version ${functionVersion}
+ */
+@MyBatisMapper
+public interface ${ClassName}Mapper extends BaseMapper<${ClassName}> {
+	
+}]]>
+    </content>
+</template>

@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeeplus.modules.cuxarea.mapper.CuxAdministrationRegionMapper">
+
+    <sql id="cuxAdministrationRegionColumns">
+		a.region_code AS "regionCode",
+		a.region_name AS "regionName",
+		a.region_level AS "regionLevel",
+		a.parent_region_code AS "parentRegionCode",
+		a.id AS "id"
+	</sql>
+
+    <sql id="cuxAdministrationRegionJoins">
+
+    </sql>
+
+
+    <select id="get" resultType="CuxAdministrationRegion">
+        SELECT
+        <include refid="cuxAdministrationRegionColumns"/>
+        FROM cux_administration_region a
+        <include refid="cuxAdministrationRegionJoins"/>
+        WHERE a.id = #{id}
+    </select>
+
+    <select id="findList" resultType="CuxAdministrationRegion">
+        SELECT
+        <include refid="cuxAdministrationRegionColumns"/>
+        FROM cux_administration_region a
+        <include refid="cuxAdministrationRegionJoins"/>
+        <where>
+
+            ${dataScope}
+        </where>
+        <choose>
+            <when test="page !=null and page.orderBy != null and page.orderBy != ''">
+                ORDER BY ${page.orderBy}
+            </when>
+            <otherwise>
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="findAllList" resultType="CuxAdministrationRegion">
+        SELECT
+        <include refid="cuxAdministrationRegionColumns"/>
+        FROM cux_administration_region a
+        <include refid="cuxAdministrationRegionJoins"/>
+        <where>
+
+            ${dataScope}
+        </where>
+        <choose>
+            <when test="page !=null and page.orderBy != null and page.orderBy != ''">
+                ORDER BY ${page.orderBy}
+            </when>
+            <otherwise>
+            </otherwise>
+        </choose>
+    </select>
+
+    <insert id="insert">
+		INSERT INTO cux_administration_region(
+			region_code,
+			region_name,
+			region_level,
+			parent_region_code,
+			id
+		) VALUES (
+			#{regionCode},
+			#{regionName},
+			#{regionLevel},
+			#{parentRegionCode},
+			#{id}
+		)
+	</insert>
+
+    <update id="update">
+		UPDATE cux_administration_region SET 	
+			region_code = #{regionCode},
+			region_name = #{regionName},
+			region_level = #{regionLevel},
+			parent_region_code = #{parentRegionCode},
+			id = #{id}
+		WHERE id = #{id}
+	</update>
+
+
+    <!--物理删除-->
+    <update id="delete">
+		DELETE FROM cux_administration_region
+		WHERE id = #{id}
+	</update>
+
+    <!--逻辑删除-->
+    <update id="deleteByLogic">
+		UPDATE cux_administration_region SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+
+
+    <!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+    <select id="findUniqueByProperty" resultType="CuxAdministrationRegion" statementType="STATEMENT">
+		select * FROM cux_administration_region  where ${propertyName} = '${value}'
+	</select>
+
+</mapper>

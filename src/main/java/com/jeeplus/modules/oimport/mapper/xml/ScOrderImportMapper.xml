@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeeplus.modules.oimport.mapper.ScOrderImportMapper">
+
+    <sql id="scOrderImportColumns">
+        a.id AS "id",
+		a.user_id AS "user.id",
+		a.phone AS "phone",
+		a.username AS "username",
+		a.address AS "address",
+		a.agent_name AS "agentName",
+		a.logistics_name AS "logisticsName",
+		a.shift_name AS "shiftName",
+		a.factory_name AS "factoryName",
+		a.allot_factory_name AS "allotFactoryName",
+		a.production_name AS "productionName",
+		a.last_unit_price AS "lastUnitPrice",
+		a.weight AS "weight",
+		a.count AS "count",
+		a.logistics_price AS "logisticsPrice",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.del_flag AS "delFlag",
+		a.remarks AS "remarks",
+				
+		user.name AS "user.name"
+    </sql>
+
+    <sql id="scOrderImportJoins">
+
+        LEFT JOIN sys_user user ON user.id = a.user_id
+    </sql>
+
+
+    <select id="get" resultType="ScOrderImport">
+        SELECT
+        <include refid="scOrderImportColumns"/>
+        FROM sc_order_import a
+        <include refid="scOrderImportJoins"/>
+        WHERE a.id = #{id}
+    </select>
+
+    <select id="findList" resultType="ScOrderImport">
+        SELECT
+        <include refid="scOrderImportColumns"/>
+        FROM sc_order_import a
+        <include refid="scOrderImportJoins"/>
+        <where>
+            a.del_flag = #{DEL_FLAG_NORMAL}
+            ${dataScope}
+            <if test="user != null and user.id != null and user.id != ''">
+                AND a.user_id = #{user.id}
+            </if>
+            <if test="phone != null and phone != ''">
+                AND a.phone LIKE
+                <if test="dbName == 'oracle'">'%'||#{phone}||'%'</if>
+                <if test="dbName == 'mssql'">'%'+#{phone}+'%'</if>
+                <if test="dbName == 'mysql'">concat('%',#{phone},'%')</if>
+            </if>
+            <if test="username != null and username != ''">
+                AND a.username LIKE
+                <if test="dbName == 'oracle'">'%'||#{username}||'%'</if>
+                <if test="dbName == 'mssql'">'%'+#{username}+'%'</if>
+                <if test="dbName == 'mysql'">concat('%',#{username},'%')</if>
+            </if>
+            <if test="address != null and address != ''">
+                AND a.address LIKE
+                <if test="dbName == 'oracle'">'%'||#{address}||'%'</if>
+                <if test="dbName == 'mssql'">'%'+#{address}+'%'</if>
+                <if test="dbName == 'mysql'">concat('%',#{address},'%')</if>
+            </if>
+            <if test="agentName != null and agentName != ''">
+                AND a.agent_name LIKE
+                <if test="dbName == 'oracle'">'%'||#{agentName}||'%'</if>
+                <if test="dbName == 'mssql'">'%'+#{agentName}+'%'</if>
+                <if test="dbName == 'mysql'">concat('%',#{agentName},'%')</if>
+            </if>
+            <if test="logisticsName != null and logisticsName != ''">
+                AND a.logistics_name LIKE
+                <if test="dbName == 'oracle'">'%'||#{logisticsName}||'%'</if>
+                <if test="dbName == 'mssql'">'%'+#{logisticsName}+'%'</if>
+                <if test="dbName == 'mysql'">concat('%',#{logisticsName},'%')</if>
+            </if>
+            <if test="shiftName != null and shiftName != ''">
+                AND a.shift_name LIKE
+                <if test="dbName == 'oracle'">'%'||#{shiftName}||'%'</if>
+                <if test="dbName == 'mssql'">'%'+#{shiftName}+'%'</if>
+                <if test="dbName == 'mysql'">concat('%',#{shiftName},'%')</if>
+            </if>
+            <if test="allotFactoryName != null and allotFactoryName != ''">
+                AND a.allot_factory_name LIKE
+                <if test="dbName == 'oracle'">'%'||#{allotFactoryName}||'%'</if>
+                <if test="dbName == 'mssql'">'%'+#{allotFactoryName}+'%'</if>
+                <if test="dbName == 'mysql'">concat('%',#{allotFactoryName},'%')</if>
+            </if>
+            <if test="productionName != null and productionName != ''">
+                AND a.production_name LIKE
+                <if test="dbName == 'oracle'">'%'||#{productionName}||'%'</if>
+                <if test="dbName == 'mssql'">'%'+#{productionName}+'%'</if>
+                <if test="dbName == 'mysql'">concat('%',#{productionName},'%')</if>
+            </if>
+            <if test="lastUnitPrice != null and lastUnitPrice != ''">
+                AND a.last_unit_price LIKE
+                <if test="dbName == 'oracle'">'%'||#{lastUnitPrice}||'%'</if>
+                <if test="dbName == 'mssql'">'%'+#{lastUnitPrice}+'%'</if>
+                <if test="dbName == 'mysql'">concat('%',#{lastUnitPrice},'%')</if>
+            </if>
+            <if test="beginWeight != null and endWeight != null ">
+                AND a.weight BETWEEN #{beginWeight} AND #{endWeight}
+            </if>
+            <if test="beginCount != null and endCount != null ">
+                AND a.count BETWEEN #{beginCount} AND #{endCount}
+            </if>
+            <if test="beginLogisticsPrice != null and endLogisticsPrice != null ">
+                AND a.logistics_price BETWEEN #{beginLogisticsPrice} AND #{endLogisticsPrice}
+            </if>
+            <if test="remarks != null and remarks != ''">
+                AND a.remarks LIKE
+                <if test="dbName == 'oracle'">'%'||#{remarks}||'%'</if>
+                <if test="dbName == 'mssql'">'%'+#{remarks}+'%'</if>
+                <if test="dbName == 'mysql'">concat('%',#{remarks},'%')</if>
+            </if>
+        </where>
+                ORDER BY a.agent_name DESC
+    </select>
+
+    <select id="findAllList" resultType="ScOrderImport">
+        SELECT
+        <include refid="scOrderImportColumns"/>
+        FROM sc_order_import a
+        <include refid="scOrderImportJoins"/>
+        <where>
+            a.del_flag = #{DEL_FLAG_NORMAL}
+            ${dataScope}
+        </where>
+        <choose>
+            <when test="page !=null and page.orderBy != null and page.orderBy != ''">
+                ORDER BY ${page.orderBy}
+            </when>
+            <otherwise>
+                ORDER BY a.update_date DESC
+            </otherwise>
+        </choose>
+    </select>
+
+    <insert id="insert">
+        INSERT INTO sc_order_import(user_id,
+                                    phone,
+                                    username,
+                                    address,
+                                    agent_name,
+                                    logistics_name,
+                                    shift_name,
+                                    factory_name,
+                                    allot_factory_name,
+                                    production_name,
+                                    last_unit_price,
+                                    weight,
+                                    count,
+                                    logistics_price,
+                                    create_by,
+                                    create_date,
+                                    update_by,
+                                    update_date,
+                                    del_flag,
+                                    remarks)
+        VALUES (#{user.id},
+                #{phone},
+                #{username},
+                #{address},
+                #{agentName},
+                #{logisticsName},
+                #{shiftName},
+                #{factoryName},
+                #{allotFactoryName},
+                #{productionName},
+                #{lastUnitPrice},
+                #{weight},
+                #{count},
+                #{logisticsPrice},
+                #{createBy.id},
+                #{createDate},
+                #{updateBy.id},
+                #{updateDate},
+                #{delFlag},
+                #{remarks})
+    </insert>
+
+    <update id="update">
+        UPDATE sc_order_import
+        SET user_id            = #{user.id},
+            phone              = #{phone},
+            username           = #{username},
+            address            = #{address},
+            agent_name         = #{agentName},
+            logistics_name     = #{logisticsName},
+            shift_name         = #{shiftName},
+            factory_name       = #{factoryName},
+            allot_factory_name = #{allotFactoryName},
+            production_name    = #{productionName},
+            last_unit_price    = #{lastUnitPrice},
+            weight             = #{weight},
+            count              = #{count},
+            logistics_price    = #{logisticsPrice},
+            update_by          = #{updateBy.id},
+            update_date        = #{updateDate},
+            remarks            = #{remarks}
+        WHERE id = #{id}
+    </update>
+
+
+    <!--物理删除-->
+    <update id="delete">
+        DELETE
+        FROM sc_order_import
+        WHERE id = #{id}
+    </update>
+
+    <!--逻辑删除-->
+    <update id="deleteByLogic">
+        UPDATE sc_order_import
+        SET del_flag = #{DEL_FLAG_DELETE}
+        WHERE id = #{id}
+    </update>
+
+
+    <!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+    <select id="findUniqueByProperty" resultType="ScOrderImport" statementType="STATEMENT">
+        select *
+        FROM sc_order_import
+        where ${propertyName} = '${value}'
+    </select>
+
+    <select id="autoCompleteCustom" resultType="java.util.Map">
+        select a.id,
+        <choose>
+            <when test="phone != null">
+                a.phone AS "value", concat(a.username,' | ', a.address) AS "descr"
+            </when>
+            <when test="username != null">
+                a.username AS "value", concat(a.phone,' | ', a.address) AS "descr"
+            </when>
+            <when test="address != null">
+                a.address AS "value", concat(a.phone,' | ', a.username) AS "descr"
+            </when>
+        </choose>
+        from sc_custom AS a
+        <where>
+            (
+            <choose>
+                <when test="phone != null">
+                    a.phone like concat('%', #{phone}, '%')
+                </when>
+                <when test="username != null">
+                    a.username like concat('%', #{username}, '%')
+                    OR a.username_py_first like concat('%', upper(#{username}), '%')
+                </when>
+                <when test="address != null">
+                    a.address like concat('%', #{address}, '%')
+                </when>
+                <otherwise>
+                  1 = 1
+                </otherwise>
+            </choose>
+            )
+            <if test="officeId != null">
+                and a.office_id =  #{officeId}
+            </if>
+        </where>
+    </select>
+
+</mapper>

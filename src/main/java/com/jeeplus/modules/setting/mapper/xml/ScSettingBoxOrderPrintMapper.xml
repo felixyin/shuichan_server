@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeeplus.modules.setting.mapper.ScSettingBoxOrderPrintMapper">
+    
+	<sql id="scSettingBoxOrderPrintColumns">
+		a.id AS "id",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+		a.print_type AS "printType",
+		a.border AS "border",
+		a.table_head AS "tableHead",
+		a.jin AS "jin",
+		a.logistics AS "logistics",
+		a.shift AS "shift",
+		a.count AS "count",
+		a.receiver_bold AS "receiverBold",
+		a.receiver_newline AS "receiverNewline",
+		a.receiver_fontsize AS "receiverFontsize",
+		a.remarks_fontsize AS "remarksFontsize",
+		a.page_width AS "pageWidth",
+		a.page_height AS "pageHeight",
+		a.remarks_offset AS "remarksOffset",
+		a.print_adjusting AS "printAdjusting"
+	</sql>
+	
+	<sql id="scSettingBoxOrderPrintJoins">
+		
+	</sql>
+	
+    
+	<select id="get" resultType="ScSettingBoxOrderPrint" >
+		SELECT 
+			<include refid="scSettingBoxOrderPrintColumns"/>
+		FROM sc_setting_box_order_print a
+		<include refid="scSettingBoxOrderPrintJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="ScSettingBoxOrderPrint" >
+		SELECT 
+			<include refid="scSettingBoxOrderPrintColumns"/>
+		FROM sc_setting_box_order_print a
+		<include refid="scSettingBoxOrderPrintJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+			<if test="createBy != null and createBy.id != null and createBy.id != ''">
+				AND a.create_by = #{createBy.id}
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="ScSettingBoxOrderPrint" >
+		SELECT 
+			<include refid="scSettingBoxOrderPrintColumns"/>
+		FROM sc_setting_box_order_print a
+		<include refid="scSettingBoxOrderPrintJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			${dataScope}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO sc_setting_box_order_print(
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag,
+			print_type,
+			border,
+			table_head,
+			jin,
+			logistics,
+			shift,
+			count,
+			receiver_bold,
+			receiver_newline,
+			receiver_fontsize,
+			remarks_fontsize,
+			page_width,
+			page_height,
+			remarks_offset,
+			print_adjusting
+		) VALUES (
+			#{createBy.id},
+			#{createDate},
+			#{updateBy.id},
+			#{updateDate},
+			#{remarks},
+			#{delFlag},
+			#{printType},
+			#{border},
+			#{tableHead},
+			#{jin},
+			#{logistics},
+			#{shift},
+			#{count},
+			#{receiverBold},
+			#{receiverNewline},
+			#{receiverFontsize},
+			#{remarksFontsize},
+			#{pageWidth},
+			#{pageHeight},
+			#{remarksOffset},
+			#{printAdjusting}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE sc_setting_box_order_print SET 	
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			remarks = #{remarks},
+			print_type = #{printType},
+			border = #{border},
+			table_head = #{tableHead},
+			jin = #{jin},
+			logistics = #{logistics},
+			shift = #{shift},
+			count = #{count},
+			receiver_bold = #{receiverBold},
+			receiver_newline = #{receiverNewline},
+			receiver_fontsize = #{receiverFontsize},
+			remarks_fontsize = #{remarksFontsize},
+			page_width = #{pageWidth},
+			page_height = #{pageHeight},
+			remarks_offset = #{remarksOffset},
+			print_adjusting = #{printAdjusting}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!--物理删除-->
+	<update id="delete">
+		DELETE FROM sc_setting_box_order_print
+		WHERE id = #{id}
+	</update>
+	
+	<!--逻辑删除-->
+	<update id="deleteByLogic">
+		UPDATE sc_setting_box_order_print SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+	<select id="findUniqueByProperty" resultType="ScSettingBoxOrderPrint" statementType="STATEMENT">
+		select * FROM sc_setting_box_order_print  where ${propertyName} = '${value}'
+	</select>
+	
+</mapper>

@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeeplus.modules.custom.mapper.ScCustomMapper">
+
+    <sql id="scCustomColumns">
+		a.id AS "id",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.username AS "username",
+		a.username_py AS "usernamePy",
+		a.username_py_first AS "usernamePyFirst",
+		a.phone AS "phone",
+		a.address AS "address",
+		a.office_id AS "office.id",
+		a.del_flag AS "delFlag",
+		a.remarks AS "remarks",
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+		office.name AS "office.name"
+	</sql>
+
+    <sql id="scCustomJoins">
+		
+		LEFT JOIN sys_office office ON office.id = a.office_id
+	</sql>
+
+
+    <select id="get" resultType="ScCustom">
+        SELECT
+        <include refid="scCustomColumns"/>
+        FROM sc_custom a
+        <include refid="scCustomJoins"/>
+        WHERE a.id = #{id}
+    </select>
+
+    <select id="findList" resultType="ScCustom">
+        SELECT
+        <include refid="scCustomColumns"/>
+        FROM sc_custom a
+        <include refid="scCustomJoins"/>
+        <where>
+            a.del_flag = #{DEL_FLAG_NORMAL}
+            ${dataScope}
+            <if test="username != null and username != ''">
+                AND a.username LIKE
+                <if test="dbName == 'oracle'">'%'||#{username}||'%'</if>
+                <if test="dbName == 'mssql'">'%'+#{username}+'%'</if>
+                <if test="dbName == 'mysql'">concat('%',#{username},'%')</if>
+            </if>
+            <if test="usernamePyFirst != null and usernamePyFirst != ''">
+                AND a.username_py_first LIKE
+                <if test="dbName == 'oracle'">'%'||#{usernamePyFirst}||'%'</if>
+                <if test="dbName == 'mssql'">'%'+#{usernamePyFirst}+'%'</if>
+                <if test="dbName == 'mysql'">concat('%',#{usernamePyFirst},'%')</if>
+            </if>
+            <if test="phone != null and phone != ''">
+                AND a.phone LIKE
+                <if test="dbName == 'oracle'">'%'||#{phone}||'%'</if>
+                <if test="dbName == 'mssql'">'%'+#{phone}+'%'</if>
+                <if test="dbName == 'mysql'">concat('%',#{phone},'%')</if>
+            </if>
+            <if test="address != null and address != ''">
+                AND a.address LIKE
+                <if test="dbName == 'oracle'">'%'||#{address}||'%'</if>
+                <if test="dbName == 'mssql'">'%'+#{address}+'%'</if>
+                <if test="dbName == 'mysql'">concat('%',#{address},'%')</if>
+            </if>
+            <if test="office != null and office.id != null and office.id != ''">
+                AND a.office_id = #{office.id}
+            </if>
+            <if test="remarks != null and remarks != ''">
+                AND a.remarks LIKE
+                <if test="dbName == 'oracle'">'%'||#{remarks}||'%'</if>
+                <if test="dbName == 'mssql'">'%'+#{remarks}+'%'</if>
+                <if test="dbName == 'mysql'">concat('%',#{remarks},'%')</if>
+            </if>
+        </where>
+        <choose>
+            <when test="page !=null and page.orderBy != null and page.orderBy != ''">
+                ORDER BY ${page.orderBy}
+            </when>
+            <otherwise>
+                ORDER BY a.update_date DESC
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="findAllList" resultType="ScCustom">
+        SELECT
+        <include refid="scCustomColumns"/>
+        FROM sc_custom a
+        <include refid="scCustomJoins"/>
+        <where>
+            a.del_flag = #{DEL_FLAG_NORMAL}
+            ${dataScope}
+        </where>
+        <choose>
+            <when test="page !=null and page.orderBy != null and page.orderBy != ''">
+                ORDER BY ${page.orderBy}
+            </when>
+            <otherwise>
+                ORDER BY a.update_date DESC
+            </otherwise>
+        </choose>
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+		INSERT INTO sc_custom(
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			username,
+			username_py,
+			username_py_first,
+			phone,
+			address,
+			office_id,
+			del_flag,
+			remarks
+		) VALUES (
+			#{createBy.id},
+			#{createDate},
+			#{updateBy.id},
+			#{updateDate},
+			#{username},
+			#{usernamePy},
+			#{usernamePyFirst},
+			#{phone},
+			#{address},
+			#{office.id},
+			#{delFlag},
+			#{remarks}
+		)
+	</insert>
+
+    <update id="update">
+		UPDATE sc_custom SET 	
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			username = #{username},
+			username_py = #{usernamePy},
+			username_py_first = #{usernamePyFirst},
+			phone = #{phone},
+			address = #{address},
+			office_id = #{office.id},
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+
+
+    <!--物理删除-->
+    <update id="delete">
+		DELETE FROM sc_custom
+		WHERE id = #{id}
+	</update>
+
+    <!--逻辑删除-->
+    <update id="deleteByLogic">
+		UPDATE sc_custom SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+
+
+    <!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+    <select id="findUniqueByProperty" resultType="ScCustom" statementType="STATEMENT">
+		select * FROM sc_custom  where ${propertyName} = '${value}'
+	</select>
+
+</mapper>

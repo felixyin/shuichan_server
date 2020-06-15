@@ -1,0 +1,743 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeeplus.modules.order.mapper.ScOrderMapper">
+
+    <sql id="scOrderColumns">
+        a.id AS "id",
+        a.no AS "no",
+		a.agent_name AS "agentName",
+		a.custom_id AS "custom.id",
+		a.should_logistics_id AS "shouldLogistics.id",
+		a.logistics_shift AS "shift",
+		a.factory_id AS "factory.id",
+		a.real_logistics_id AS "realLogistics.id",
+		a.goods_order_price AS "goodsOrderPrice",
+		a.deliver_order_price AS "deliverOrderPrice",
+		a.logistics_order_price AS "logisticsOrderPrice",
+		a.will_pay_price AS "willPayPrice",
+		a.real_pay_price AS "realPayPrice",
+		a.deliver_date AS "deliverDate",
+		a.tomorrow_cancellation AS "tomorrowCancellation",
+		a.status AS "status",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+        a.logistics_remarks AS "logisticsRemarks",
+				
+		custom.username AS "custom.username",
+        custom.phone AS "custom.phone",
+        custom.address AS "custom.address",
+		shouldLogistics.name AS "shouldLogistics.name",
+		factory.name AS "factory.name",
+		realLogistics.name AS "realLogistics.name",
+		createBy.name AS "createBy.name",
+		updateBy.name AS "updateBy.name"
+    </sql>
+
+    <sql id="scOrderJoins">
+
+        LEFT JOIN sc_custom custom ON custom.id = a.custom_id
+		LEFT JOIN sys_office shouldLogistics ON shouldLogistics.id = a.should_logistics_id
+		LEFT JOIN sys_office factory ON factory.id = a.factory_id
+		LEFT JOIN sys_office realLogistics ON realLogistics.id = a.real_logistics_id
+		LEFT JOIN sys_user createBy ON createBy.id = a.create_by
+		LEFT JOIN sys_user updateBy ON updateBy.id = a.update_by
+    </sql>
+
+
+    <select id="get" resultType="ScOrder">
+        SELECT
+        <include refid="scOrderColumns"/>
+        FROM sc_order a
+        <include refid="scOrderJoins"/>
+        WHERE a.id = #{id}
+    </select>
+
+    <select id="findList" resultType="ScOrder">
+        SELECT
+        <include refid="scOrderColumns"/>
+        FROM sc_order a
+        <include refid="scOrderJoins"/>
+        <where>
+            a.del_flag = #{DEL_FLAG_NORMAL}
+            ${dataScope}
+            <if test="agentName != null and agentName != ''">
+                AND a.agent_name LIKE
+                <if test="dbName == 'oracle'">'%'||#{agentName}||'%'</if>
+                <if test="dbName == 'mssql'">'%'+#{agentName}+'%'</if>
+                <if test="dbName == 'mysql'">concat('%',#{agentName},'%')</if>
+            </if>
+            <if test="custom != null and custom.id != null and custom.id != ''">
+                AND a.custom_id = #{custom.id}
+            </if>
+            <if test="custom != null and custom.username != null and custom.username != ''">
+                AND custom.username LIKE
+                <if test="dbName == 'oracle'">'%'||#{custom.username}||'%'</if>
+                <if test="dbName == 'mssql'">'%'+#{custom.username}+'%'</if>
+                <if test="dbName == 'mysql'">concat('%',#{custom.username},'%')</if>
+            </if>
+            <if test="custom != null and custom.phone!= null and custom.phone!= ''">
+                AND custom.phone LIKE
+                <if test="dbName == 'oracle'">'%'||#{custom.phone}||'%'</if>
+                <if test="dbName == 'mssql'">'%'+#{custom.phone}+'%'</if>
+                <if test="dbName == 'mysql'">concat('%',#{custom.phone},'%')</if>
+            </if>
+            <if test="shouldLogistics != null and shouldLogistics.id != null and shouldLogistics.id != ''">
+                AND a.should_logistics_id = #{shouldLogistics.id}
+            </if>
+            <if test="shouldLogistics != null and shouldLogistics.name != null and shouldLogistics.name != ''">
+                AND shouldLogistics.name LIKE
+                <if test="dbName == 'oracle'">'%'||#{shouldLogistics.name}||'%'</if>
+                <if test="dbName == 'mssql'">'%'+#{shouldLogistics.name}+'%'</if>
+                <if test="dbName == 'mysql'">concat('%',#{shouldLogistics.name},'%')</if>
+            </if>
+            <if test="shift != null and shift != ''">
+                AND a.logistics_shift = #{shift}
+            </if>
+            <if test="factory != null and factory.id != null and factory.id != ''">
+                AND a.factory_id = #{factory.id}
+            </if>
+            <if test="realLogistics != null and realLogistics.id != null and realLogistics.id != ''">
+                AND a.real_logistics_id = #{realLogistics.id}
+            </if>
+            <if test="realLogistics != null and realLogistics.name != null and realLogistics.name != ''">
+                AND realLogistics.name LIKE
+                <if test="dbName == 'oracle'">'%'||#{realLogistics.name}||'%'</if>
+                <if test="dbName == 'mssql'">'%'+#{realLogistics.name}+'%'</if>
+                <if test="dbName == 'mysql'">concat('%',#{realLogistics.name},'%')</if>
+            </if>
+            <if test="beginDeliverDate != null and endDeliverDate != null ">
+                AND a.deliver_date BETWEEN #{beginDeliverDate} AND #{endDeliverDate}
+            </if>
+            <if test="tomorrowCancellation != null and tomorrowCancellation != ''">
+                AND a.tomorrow_cancellation = #{tomorrowCancellation}
+            </if>
+            <if test="status != null and status != ''">
+                AND a.status = #{status}
+            </if>
+            <if test="createBy != null and createBy.id != null and createBy.id != ''">
+                AND a.create_by = #{createBy.id}
+            </if>
+            <if test="createDate != null and createDate != null ">
+                AND DATE_FORMAT(a.create_date,'%Y-%m-%d') = DATE_FORMAT(#{createDate},'%Y-%m-%d')
+            </if>
+            <if test="beginCreateDate !=null">
+                AND ( DATE_FORMAT(a.create_date,'%Y-%m-%d') &gt;= DATE_FORMAT(#{beginCreateDate},'%Y-%m-%d')
+                OR  DATE_FORMAT(a.deliver_date,'%Y-%m-%d') &gt;= DATE_FORMAT(#{beginCreateDate},'%Y-%m-%d'))
+            </if>
+            <if test="endCreateDate !=null">
+                AND ( DATE_FORMAT(a.create_date,'%Y-%m-%d') &lt;= DATE_FORMAT(#{endCreateDate},'%Y-%m-%d')
+                OR  DATE_FORMAT(a.deliver_date,'%Y-%m-%d') &lt;= DATE_FORMAT(#{endCreateDate},'%Y-%m-%d'))
+            </if>
+            <if test="deliverDate !=null">
+                AND ( DATE_FORMAT(a.create_date,'%Y-%m-%d') = DATE_FORMAT(#{deliverDate},'%Y-%m-%d')
+                OR  DATE_FORMAT(a.deliver_date,'%Y-%m-%d') = DATE_FORMAT(#{deliverDate},'%Y-%m-%d'))
+            </if>
+            <if test="remarks != null and remarks != ''">
+                AND a.remarks LIKE
+                <if test="dbName == 'oracle'">'%'||#{remarks}||'%'</if>
+                <if test="dbName == 'mssql'">'%'+#{remarks}+'%'</if>
+                <if test="dbName == 'mysql'">concat('%',#{remarks},'%')</if>
+            </if>
+        </where>
+        <choose>
+            <when test="page !=null and page.orderBy != null and page.orderBy != ''">
+                ORDER BY ${page.orderBy}
+            </when>
+            <otherwise>
+                ORDER BY a.update_date DESC
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="findAllList" resultType="ScOrder">
+        SELECT
+        <include refid="scOrderColumns"/>
+        FROM sc_order a
+        <include refid="scOrderJoins"/>
+        <where>
+            a.del_flag = #{DEL_FLAG_NORMAL}
+            ${dataScope}
+        </where>
+        <choose>
+            <when test="page !=null and page.orderBy != null and page.orderBy != ''">
+                ORDER BY ${page.orderBy}
+            </when>
+            <otherwise>
+                ORDER BY a.update_date DESC
+            </otherwise>
+        </choose>
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sc_order(agent_name,
+                             custom_id,
+                             should_logistics_id,
+                             logistics_shift,
+                             factory_id,
+                             real_logistics_id,
+                             goods_order_price,
+                             deliver_order_price,
+                             logistics_order_price,
+                             will_pay_price,
+                             real_pay_price,
+                             deliver_date,
+                             tomorrow_cancellation,
+                             status,
+                             create_by,
+                             create_date,
+                             update_by,
+                             update_date,
+                             remarks,
+                             del_flag,
+                             no,
+                             logistics_remarks)
+        VALUES (#{agentName},
+                #{custom.id},
+                #{shouldLogistics.id},
+                #{shift},
+                #{factory.id},
+                #{realLogistics.id},
+                #{goodsOrderPrice},
+                #{deliverOrderPrice},
+                #{logisticsOrderPrice},
+                #{willPayPrice},
+                #{realPayPrice},
+                #{deliverDate},
+                #{tomorrowCancellation},
+                #{status},
+                #{createBy.id},
+                #{createDate},
+                #{updateBy.id},
+                #{updateDate},
+                #{remarks},
+                #{delFlag},
+                #{no},
+                #{logisticsRemarks})
+    </insert>
+
+    <update id="update">
+        UPDATE sc_order
+        SET agent_name            = #{agentName},
+            custom_id             = #{custom.id},
+            should_logistics_id   = #{shouldLogistics.id},
+            logistics_shift       = #{shift},
+            factory_id            = #{factory.id},
+            real_logistics_id     = #{realLogistics.id},
+            goods_order_price     = #{goodsOrderPrice},
+            deliver_order_price   = #{deliverOrderPrice},
+            logistics_order_price = #{logisticsOrderPrice},
+            will_pay_price        = #{willPayPrice},
+            real_pay_price        = #{realPayPrice},
+            deliver_date          = #{deliverDate},
+            tomorrow_cancellation = #{tomorrowCancellation},
+            no                    = #{no},
+            status                = #{status},
+            update_by             = #{updateBy.id},
+            update_date           = #{updateDate},
+            remarks               = #{remarks},
+            logistics_remarks     = #{logisticsRemarks}
+        WHERE id = #{id}
+    </update>
+
+
+    <!--物理删除-->
+    <update id="delete">
+        DELETE
+        FROM sc_order
+        WHERE id = #{id}
+    </update>
+
+    <!--逻辑删除-->
+    <update id="deleteByLogic">
+        UPDATE sc_order
+        SET del_flag = #{DEL_FLAG_DELETE}
+        WHERE id = #{id}
+    </update>
+
+
+    <!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+    <select id="findUniqueByProperty" resultType="ScOrder" statementType="STATEMENT">
+        select *
+        FROM sc_order
+        where ${propertyName} = '${value}'
+    </select>
+
+    <sql id="selectForPrint">
+        SELECT *
+        FROM print_box_view as bv
+    </sql>
+
+    <select id="findForPrintByOrderIds" resultType="com.jeeplus.modules.boxitem.entity.ScBoxItem">
+        <include refid="selectForPrint"/>
+        WHERE
+        bv.`box.order.id` IN
+        <foreach item="id" collection="ids" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        <if test="printAdjusting !=null and printAdjusting == 'off'.toString()">
+            AND (
+            bv.`box.allotFactory.id` = NULL OR
+            bv.`box.allotFactory.id` = '' OR
+            bv.`box.allotFactory.id` = bv.`box.order.factory.id`
+            )
+        </if>
+    </select>
+    <select id="findForPrintByBoxIds" resultType="com.jeeplus.modules.boxitem.entity.ScBoxItem">
+        <include refid="selectForPrint"/>
+        WHERE
+        bv.`box.id` IN
+        <foreach item="id" collection="ids" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        <if test="printAdjusting !=null and printAdjusting == 'off'.toString()">
+            AND (
+            bv.`box.allotFactory.id` = NULL OR
+            bv.`box.allotFactory.id` = '' OR
+            bv.`box.allotFactory.id` = bv.`box.order.factory.id`
+            )
+        </if>
+    </select>
+    <select id="findForPrintByBoxItemIds" resultType="com.jeeplus.modules.boxitem.entity.ScBoxItem">
+        <include refid="selectForPrint"/>
+        WHERE
+        bv.`id` IN
+        <foreach item="id" collection="ids" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        <if test="printAdjusting !=null and printAdjusting == 'off'">
+            AND (
+            bv.`box.allotFactory.id` = NULL OR
+            bv.`box.allotFactory.id` = '' OR
+            bv.`box.allotFactory.id` = bv.`box.order.factory.id`
+            )
+        </if>
+    </select>
+    <select id="autoCompleteAgentName" resultType="java.lang.String">
+        SELECT so.agent_name
+        FROM sc_order so
+        WHERE so.agent_name != ''
+          AND so.agent_name IS NOT NULL
+          AND so.custom_id = #{customId}
+          <if test="officeId != null">
+              and so.factory_id =  #{officeId}
+          </if>
+        LIMIT 1
+    </select>
+    <select id="autoCompleteAgentName2" resultType="java.util.Map">
+        SELECT
+        so.agent_name as "value"
+        FROM
+        sc_order so
+        <where>
+            so.agent_name != ''
+            AND so.agent_name IS NOT NULL
+            <if test="customId != null and customId != ''">
+                AND so.custom_id = #{customId}
+            </if>
+            <if test="agentName != null and agentName != ''">
+                AND so.agent_name LIKE concat('%',#{agentName},'%')
+            </if>
+            <if test="officeId != null">
+                and so.factory_id =  #{officeId}
+            </if>
+        </where>
+
+    </select>
+    <select id="autoCompleteOffice" resultType="java.util.Map">
+        SELECT a.id, a.name AS "value" FROM sys_office a
+        <where>
+            <if test="type != null and type != ''">
+                AND a.type = #{type}
+            </if>
+            <!--            <if test="customId != null and customId != ''">-->
+            <!--                AND a.custom_id = #{customId}-->
+            <!--            </if>-->
+            <if test="officeName!= null and officeName != ''">
+                AND (
+                a.name LIKE concat('%',#{officeName},'%')
+                OR a.py_first LIKE concat('%',#{officeName},'%')
+                OR a.py LIKE concat('%',#{officeName},'%')
+                )
+            </if>
+        </where>
+    </select>
+    <select id="autoCompleteProductionName" resultType="java.util.Map">
+        SELECT a.id, a.name AS "value", a.last_unit_price AS "descr"
+        FROM sc_production a
+        <where>
+            <if test="customId != null and customId != ''">
+                AND a.custom_id = #{customId}
+            </if>
+            <if test="officeId != null and officeId != ''">
+                AND a.office_id = #{officeId}
+            </if>
+            <if test="productionName != null and productionName != ''">
+                AND (
+                a.name LIKE concat('%',#{productionName},'%')
+                OR a.py_first LIKE concat('%',#{productionName},'%')
+                OR a.py LIKE concat('%',#{productionName},'%')
+                )
+            </if>
+        </where>
+    </select>
+    <select id="findLogisticsPrice" resultType="java.lang.Double">
+        SELECT
+        a.logistics_price
+        FROM
+        sc_box a LEFT JOIN sc_order o ON a.order_id = o.id
+        <where>
+            a.logistics_price IS NOT NULL
+            <if test="customId != null and customId != ''">
+                AND o.custom_id = #{customId}
+            </if>
+            <if test="productionId != null and productionId != ''">
+                AND a.production = #{productionName}
+            </if>
+            <if test="weight != null and weight != 0">
+                AND a.weight = #{weight}
+            </if>
+        </where>
+        LIMIT 1
+    </select>
+    <select id="findForOutPrintByOrderIds" resultType="com.jeeplus.modules.order.entity.OutOrder">
+        SELECT
+        sc.username,
+        sc.address,
+        sc.phone,
+        <if test="spec == '1'.toString()">
+            sp.`name` AS spec,
+        </if>
+        sum( sb.`count` ) AS `count`
+        FROM
+        sc_box sb
+        LEFT JOIN sc_order so ON sb.order_id = so.id
+        LEFT JOIN sc_custom sc ON so.custom_id = sc.id
+        LEFT JOIN sc_production sp ON sb.production = sp.id
+        WHERE
+        so.id IN
+        <foreach item="id" collection="ids" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        GROUP BY
+        sc.username,
+        sc.address,
+        sc.phone
+        <if test="spec == '1'.toString()">
+            , sp.`name`
+        </if>
+        ORDER BY
+        sb.create_date ASC,
+        so.create_date ASC
+    </select>
+
+    <select id="findTodoListForCourier" resultType="java.util.Map">
+        WITH t2 AS (SELECT IF(sc.username IS NULL OR sc.username = '', so.agent_name, sc.username) AS username,
+        sc.phone,
+        sc.address,
+        o.name                                                                  AS officeName,
+        so.factory_id,
+        SUM(sb.count)                                                           AS count
+        FROM sc_order so
+        INNER JOIN sc_custom sc ON so.custom_id = sc.id
+        INNER JOIN sys_office o ON so.factory_id = o.id
+        INNER JOIN sc_box sb ON sb.order_id = so.id
+        INNER JOIN sc_production sp ON sb.production = sp.id
+        WHERE date_format(so.deliver_date, '%Y-%m-%d') = date_format(CURRENT_TIMESTAMP(), '%Y-%m-%d')
+        <if test="factoryId != null and factoryId !=''">
+            AND so.factory_id = #{factoryId}
+        </if>
+        <if test="logisitId != null and logisitId !=''">
+            AND so.should_logistics_id = #{logisitId}
+        </if>
+        GROUP BY IF(sc.username IS NULL OR sc.username = '', so.agent_name, sc.username),
+        sc.phone,
+        sc.address,
+        o.name,
+        so.factory_id
+        ORDER BY so.create_date),
+        t3 AS (
+        SELECT IF(sc.username IS NULL OR sc.username = '', so.agent_name, sc.username) AS username,
+        sc.phone,
+        sc.address,
+        o.name                                                                  AS officeName,
+        so.factory_id,
+        COUNT(sbi.id)                                                           AS okCount
+        FROM sc_order so
+        INNER JOIN sc_custom sc ON so.custom_id = sc.id
+        INNER JOIN sys_office o ON so.factory_id = o.id
+        INNER JOIN sc_box sb ON sb.order_id = so.id
+        INNER JOIN sc_production sp ON sb.production = sp.id
+        INNER JOIN sc_box_item sbi ON sb.id = sbi.box_id
+        WHERE date_format(so.deliver_date, '%Y-%m-%d') = date_format(CURRENT_TIMESTAMP(), '%Y-%m-%d')
+        <if test="factoryId != null and factoryId !=''">
+            AND so.factory_id = #{factoryId}
+        </if>
+        <if test="logisitId != null and logisitId !=''">
+            AND so.should_logistics_id = #{logisitId}
+        </if>
+        AND sbi.process = 5
+        GROUP BY IF(sc.username IS NULL OR sc.username = '', so.agent_name, sc.username),
+        phone,
+        sc.address,
+        o.name,
+        factory_id
+        ORDER BY so.create_date
+        ),
+        t4 AS (
+        SELECT t2.username,
+        t2.phone,
+        t2.address,
+        t2.officeName,
+        t2.factory_id,
+        t2.count,
+        IFNULL(t3.okCount, 0) AS okCount
+        FROM t2
+        LEFT JOIN t3 ON (t2.username = t3.username
+        AND t2.phone = t3.phone
+        AND t2.officeName = t3.officeName
+        AND t2.factory_id = t3.factory_id)
+        WHERE t2.username IS NOT NULL
+        AND t2.username != ''
+        )
+        SELECT *
+        FROM t4
+        WHERE t4.okCount = 0
+        UNION ALL
+        SELECT '-1'            AS username,
+        '-1'            AS phone,
+        '-1'            AS address,
+        t4.officeName,
+        t4.factory_id,
+        SUM(t4.count)   AS count,
+        SUM(t4.okCount) AS okCount
+        FROM t4
+        GROUP BY t4.officeName, t4.factory_id
+        ORDER BY officeName, count, okCount, username
+    </select>
+
+    <select id="findHistoryListForCourier" resultType="java.util.Map">
+        WITH t2 AS (SELECT IF(sc.username IS NULL OR sc.username = '', so.agent_name, sc.username) AS username,
+        sc.phone,
+        sc.address,
+        o.name                                                                  AS officeName,
+        so.factory_id,
+        COUNT(sbi.id)                                                            AS count
+        FROM sc_order so
+        INNER JOIN sc_custom sc
+        ON so.custom_id = sc.id
+        INNER JOIN sys_office o
+        ON so.factory_id = o.id
+        INNER JOIN sc_box sb
+        ON sb.order_id = so.id
+        INNER JOIN sc_production sp
+        ON sb.production = sp.id
+        inner join sc_box_item sbi
+        on sbi.box_id = sb.id
+        inner join sys_user u
+        on u.id = sbi.logistics_user_id
+        inner join sys_office o2
+        on o2.id = u.office_id
+        WHERE date_format(so.deliver_date, '%Y-%m-%d') = date_format(#{dateStr}, '%Y-%m-%d')
+        <if test="factoryId != null and factoryId !=''">
+            AND so.factory_id = #{factoryId}
+        </if>
+        <if test="logisitId != null and logisitId !=''">
+            AND o2.id  = #{logisitId}
+        </if>
+        GROUP BY IF(sc.username IS NULL OR sc.username = '', so.agent_name, sc.username),
+        sc.phone,
+        sc.address,
+        o.name,
+        so.factory_id
+        ORDER BY so.create_date),
+        t3 AS (
+        SELECT IF(sc.username IS NULL OR sc.username = '', so.agent_name, sc.username) AS username,
+        sc.phone,
+        sc.address,
+        o.name                                                                  AS officeName,
+        so.factory_id,
+        COUNT(sbi.id)                                                           AS okCount
+        FROM sc_order so
+        INNER JOIN sc_custom sc ON so.custom_id = sc.id
+        INNER JOIN sys_office o ON so.factory_id = o.id
+        INNER JOIN sc_box sb ON sb.order_id = so.id
+        INNER JOIN sc_production sp ON sb.production = sp.id
+        INNER JOIN sc_box_item sbi ON sb.id = sbi.box_id
+        inner join sys_user u
+        on u.id = sbi.logistics_user_id
+        inner join sys_office o2
+        on o2.id = u.office_id
+        WHERE date_format(so.deliver_date, '%Y-%m-%d') = date_format(#{dateStr}, '%Y-%m-%d')
+        <if test="factoryId != null and factoryId !=''">
+            AND so.factory_id = #{factoryId}
+        </if>
+        <if test="logisitId != null and logisitId !=''">
+            AND o2.id = #{logisitId}
+        </if>
+        AND sbi.process = 5
+        <if test="isOnlyOwnerData">
+            AND sbi.logistics_user_id = #{userId}
+        </if>
+        GROUP BY IF(sc.username IS NULL OR sc.username = '', so.agent_name, sc.username),
+        phone,
+        sc.address,
+        o.name,
+        factory_id
+        ORDER BY so.create_date
+        ),
+        t4 AS (
+        SELECT t2.username,
+        t2.phone,
+        t2.address,
+        t2.officeName,
+        t2.factory_id,
+        t2.count,
+        IFNULL(t3.okCount, 0) AS okCount
+        FROM t2
+        LEFT JOIN t3 ON (t2.username = t3.username
+        AND t2.phone = t3.phone
+        AND t2.officeName = t3.officeName
+        AND t2.factory_id = t3.factory_id)
+        WHERE t2.username IS NOT NULL
+        AND t2.username != ''
+        )
+        SELECT *
+        FROM t4
+        WHERE t4.okCount != 0
+        UNION ALL
+        SELECT '-1'            AS username,
+        '-1'            AS phone,
+        '-1'            as address,
+        t4.officeName,
+        t4.factory_id,
+        SUM(t4.count)   AS count,
+        SUM(t4.okCount) AS okCount
+        FROM t4
+        GROUP BY t4.officeName, t4.factory_id
+        ORDER BY officeName, count, okCount, username
+    </select>
+
+    <select id="findTodoListForPackager" resultType="java.util.Map">
+        with t1 as (SELECT `sb`.`id`   AS `boxId`,
+        `sb`.`no`,
+        `sp`.`name` AS `spec`,
+        `sb`.`weight`,
+        `sb`.`count`,
+        so.agent_name AS `agentName`,
+        sc.username,
+        sc.phone,
+        sc.address,
+        `so`.`factory_id`
+        FROM `shuichan`.`sc_box` `sb`
+        LEFT JOIN `shuichan`.`sc_production` `sp` ON `sb`.`production` = `sp`.`id`
+        LEFT JOIN `shuichan`.`sc_order` `so` ON `sb`.`order_id` = `so`.`id`
+        LEFT JOIN `shuichan`.`sc_box_item` `sbi` ON `sb`.`id` = `sbi`.`box_id`
+        left join sc_custom sc on so.custom_id = sc.id
+        WHERE  (sbi.process = 3 or sbi.process =2)
+        <if test="factoryId != null and factoryId !=''">
+            AND `so`.factory_id = #{factoryId}
+        </if>
+        AND (
+        /*date_format(`sb`.`create_date`, '%Y-%m-%d') = date_format(CURRENT_TIMESTAMP(), '%Y-%m-%d')
+        OR*/ date_format(so.deliver_date, '%Y-%m-%d') = date_format(CURRENT_TIMESTAMP(), '%Y-%m-%d')
+        )
+        group by `sb`.`id`,
+        `sb`.`no`,
+        `sp`.`name`,
+        `sb`.`weight`,
+        `sb`.`count`,
+        so.agent_name,
+        sc.username,
+        sc.phone,
+        sc.address,
+        `so`.`factory_id`
+        order by sp.name,
+                 sb.create_date
+        ),
+        t2 as (
+        SELECT `sb`.`id` AS `boxId`,
+        count(1)  as count
+        FROM `shuichan`.`sc_box` `sb`
+        LEFT JOIN `shuichan`.`sc_box_item` `sbi` ON `sb`.`id` = `sbi`.`box_id`
+        LEFT JOIN `shuichan`.`sc_order` `so` ON `sb`.`order_id` = `so`.`id`
+        WHERE `sbi`.`process` = 4
+        <if test="factoryId != null and factoryId !=''">
+            AND `so`.factory_id = #{factoryId}
+        </if>
+        AND (
+        /*date_format(`sb`.`create_date`, '%Y-%m-%d') = date_format(CURRENT_TIMESTAMP(), '%Y-%m-%d')
+        OR */date_format(so.deliver_date, '%Y-%m-%d') = date_format(CURRENT_TIMESTAMP(), '%Y-%m-%d')
+        )
+        group by sb.id
+        )
+        select t1.*, ifnull(t2.count, 0) as okCount
+        from t1
+        left join t2 on t1.boxId = t2.boxId
+    </select>
+
+    <select id="findHistoryListForPackager" resultType="java.util.Map">
+        with t1 as (SELECT `sb`.`id`   AS `boxId`,
+        `sb`.`no`,
+        `sp`.`name` AS `spec`,
+        `sb`.`weight`,
+        `sb`.`count`,
+        so.agent_name AS `agentName`,
+        sc.username,
+        sc.phone,
+        sc.address,
+        `so`.`factory_id`
+        FROM `shuichan`.`sc_box` `sb`
+        LEFT JOIN `shuichan`.`sc_production` `sp` ON `sb`.`production` = `sp`.`id`
+        LEFT JOIN `shuichan`.`sc_order` `so` ON `sb`.`order_id` = `so`.`id`
+        LEFT JOIN `shuichan`.`sc_box_item` `sbi` ON `sb`.`id` = `sbi`.`box_id`
+        left join sc_custom sc on so.custom_id = sc.id
+        WHERE sbi.process >= 4
+        <if test="factoryId != null and factoryId !=''">
+            AND `so`.factory_id = #{factoryId}
+        </if>
+        AND date_format(so.deliver_date, '%Y-%m-%d') = date_format(#{dateStr}, '%Y-%m-%d')
+        group by `sb`.`id`,
+        `sb`.`no`,
+        `sp`.`name`,
+        `sb`.`weight`,
+        `sb`.`count`,
+        so.agent_name,
+        sc.username,
+        sc.phone,
+        sc.address,
+        `so`.`factory_id`
+        order by sp.name,
+        sb.create_date
+        ),
+        t2 as (
+        SELECT `sb`.`id` AS `boxId`,
+        count(1)  as count
+        FROM `shuichan`.`sc_box` `sb`
+        LEFT JOIN `shuichan`.`sc_box_item` `sbi` ON `sb`.`id` = `sbi`.`box_id`
+        LEFT JOIN `shuichan`.`sc_order` `so` ON `sb`.`order_id` = `so`.`id`
+        WHERE `sbi`.`process` >= 4
+        <if test="factoryId != null and factoryId !=''">
+            AND `so`.factory_id = #{factoryId}
+        </if>
+        <if test="isOnlyOwnerData">
+            AND sbi.package_user_id = #{userId}
+        </if>
+        AND date_format(so.deliver_date, '%Y-%m-%d') = date_format(#{dateStr}, '%Y-%m-%d')
+        group by sb.id
+        )
+        select t1.*, ifnull(t2.count, 0) as okCount
+        from t1
+        left join t2 on t1.boxId = t2.boxId;
+    </select>
+
+    <select id="findForOutPrintByBoxIds" resultType="com.jeeplus.modules.order.entity.OutOrder">
+
+    </select>
+    <select id="findForOutPrintByBoxItemIds" resultType="com.jeeplus.modules.order.entity.OutOrder">
+
+    </select>
+</mapper>

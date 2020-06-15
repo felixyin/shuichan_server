@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeeplus.modules.box.mapper.ScBoxMapper">
+
+    <sql id="scBoxColumns">
+		a.id AS "id",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.order_id AS "order.id",
+		a.no AS "no",
+		a.production AS "production.id",
+		a.weight AS "weight",
+		a.count AS "count",
+		a.single_price AS "singlePrice",
+		a.total_price AS "totalPrice",
+		a.deliver_total_price AS "deliverTotalPrice",
+		a.logistics_price AS "logisticsPrice",
+		a.logistics_total_price AS "logisticsTotalPrice",
+		a.allot_factory_id AS "allotFactory.id",
+		a.status AS "status",
+		a.del_flag AS "delFlag",
+		a.remarks AS "remarks",
+
+
+
+
+
+
+
+		production.name AS "production.name",
+
+
+
+
+
+
+
+
+		allotFactory.name AS "allotFactory.name"
+	</sql>
+
+    <sql id="scBoxJoins">
+		LEFT JOIN sc_order b ON b.id = a.order_id
+		LEFT JOIN sc_production production ON production.id = a.production
+		LEFT JOIN sys_office allotFactory ON allotFactory.id = a.allot_factory_id
+	</sql>
+
+
+    <select id="get" resultType="ScBox">
+        SELECT
+        <include refid="scBoxColumns"/>
+        FROM sc_box a
+        <include refid="scBoxJoins"/>
+        WHERE a.id = #{id}
+    </select>
+
+    <select id="findList" resultType="ScBox">
+        SELECT
+        <include refid="scBoxColumns"/>
+        FROM sc_box a
+        <include refid="scBoxJoins"/>
+        <where>
+            a.del_flag = #{DEL_FLAG_NORMAL}
+            ${dataScope}
+            <if test="order != null and order.id != null and order.id != ''">
+                AND a.order_id = #{order.id}
+            </if>
+            <if test="no != null and no != ''">
+                AND a.no LIKE
+                <if test="dbName == 'oracle'">'%'||#{no}||'%'</if>
+                <if test="dbName == 'mssql'">'%'+#{no}+'%'</if>
+                <if test="dbName == 'mysql'">concat('%',#{no},'%')</if>
+            </if>
+            <if test="production != null and production.id != null and production.id != ''">
+                AND a.production = #{production.id}
+            </if>
+            <if test="beginWeight != null and endWeight != null ">
+                AND a.weight BETWEEN #{beginWeight} AND #{endWeight}
+            </if>
+            <if test="beginCount != null and endCount != null ">
+                AND a.count BETWEEN #{beginCount} AND #{endCount}
+            </if>
+            <if test="allotFactory != null and allotFactory.id != null and allotFactory.id != ''">
+                AND a.allot_factory_id = #{allotFactory.id}
+            </if>
+            <if test="status != null and status != ''">
+                AND a.status = #{status}
+            </if>
+            <if test="remarks != null and remarks != ''">
+                AND a.remarks LIKE
+                <if test="dbName == 'oracle'">'%'||#{remarks}||'%'</if>
+                <if test="dbName == 'mssql'">'%'+#{remarks}+'%'</if>
+                <if test="dbName == 'mysql'">concat('%',#{remarks},'%')</if>
+            </if>
+        </where>
+        <choose>
+            <when test="page !=null and page.orderBy != null and page.orderBy != ''">
+                ORDER BY ${page.orderBy}
+            </when>
+            <otherwise>
+                ORDER BY a.create_date DESC
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="findAllList" resultType="ScBox">
+        SELECT
+        <include refid="scBoxColumns"/>
+        FROM sc_box a
+        <include refid="scBoxJoins"/>
+        <where>
+            a.del_flag = #{DEL_FLAG_NORMAL}
+            ${dataScope}
+        </where>
+        <choose>
+            <when test="page !=null and page.orderBy != null and page.orderBy != ''">
+                ORDER BY ${page.orderBy}
+            </when>
+            <otherwise>
+                ORDER BY a.create_date DESC
+            </otherwise>
+        </choose>
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+		INSERT INTO sc_box(
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			order_id,
+			no,
+			production,
+			weight,
+			count,
+			single_price,
+			total_price,
+			deliver_total_price,
+			logistics_price,
+			logistics_total_price,
+			allot_factory_id,
+			status,
+			del_flag,
+			remarks
+		) VALUES (
+			#{createBy.id},
+			#{createDate},
+			#{updateBy.id},
+			#{updateDate},
+			#{order.id},
+			#{no},
+			#{production.id},
+			#{weight},
+			#{count},
+			#{singlePrice},
+			#{totalPrice},
+			#{deliverTotalPrice},
+			#{logisticsPrice},
+			#{logisticsTotalPrice},
+			#{allotFactory.id},
+			#{status},
+			#{delFlag},
+			#{remarks}
+		)
+	</insert>
+
+    <update id="update">
+		UPDATE sc_box SET 	
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			order_id = #{order.id},
+			no = #{no},
+			production = #{production.id},
+			weight = #{weight},
+			count = #{count},
+			single_price = #{singlePrice},
+			total_price = #{totalPrice},
+			deliver_total_price = #{deliverTotalPrice},
+			logistics_price = #{logisticsPrice},
+			logistics_total_price = #{logisticsTotalPrice},
+			allot_factory_id = #{allotFactory.id},
+			status = #{status},
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+
+
+    <!--物理删除-->
+    <update id="delete">
+        DELETE FROM sc_box
+        <choose>
+            <when test="id !=null and id != ''">
+                WHERE id = #{id}
+            </when>
+            <otherwise>
+                WHERE order_id = #{order.id}
+            </otherwise>
+        </choose>
+    </update>
+
+    <!--逻辑删除-->
+    <update id="deleteByLogic">
+        UPDATE sc_box SET
+        del_flag = #{DEL_FLAG_DELETE}
+        <choose>
+            <when test="id !=null and id != ''">
+                WHERE id = #{id}
+            </when>
+            <otherwise>
+                WHERE order_id = #{order.id}
+            </otherwise>
+        </choose>
+    </update>
+
+
+    <!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+    <select id="findUniqueByProperty" resultType="ScBox" statementType="STATEMENT">
+		select * FROM sc_box  where ${propertyName} = '${value}'
+	</select>
+
+</mapper>

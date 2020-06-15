@@ -1,0 +1,767 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeeplus.modules.report.mapper.ScReportMapper"
+>
+
+
+    <!--  下单统计 主表 -->
+    <select id="findXiaDanReportList" resultType="java.util.Map">
+        with t as (select sbi.id,
+        so.agent_name as uname,
+        sb.production as production_id,
+        sb.weight,
+        sbi.process
+        from sc_box_item sbi
+        left join sc_box sb on sb.id = sbi.box_id
+        left join sc_order so on so.id = sb.order_id
+        left join sc_custom sc on so.custom_id = sc.id
+        where 1 = 1
+        <if test="officeId != null and officeId !=''">
+            AND so.factory_id = #{officeId}
+        </if>
+        <if test="agentName != null and agentName !=''">
+            and so.agent_name like concat('%',#{agentName},'%')
+        </if>
+        <if test="beginDate != null and beginDate != ''">
+            and date_format(sbi.create_date, '%Y-%m-%d') &gt;= date_format(#{beginDate}, '%Y-%m-%d')
+        </if>
+        <if test="endDate != null and endDate != ''">
+            and date_format(sbi.create_date, '%Y-%m-%d') &lt;= date_format(#{endDate}, '%Y-%m-%d')
+        </if>
+        group by sbi.id,
+        so.agent_name ,
+        sb.production,
+        sb.weight,
+        sbi.process
+        ),
+        a as (
+        select t.production_id,
+        t.uname,
+        count(1) as all_count,
+        sum(t.weight) as all_weight
+        from t
+        where 1 = 1
+        and (t.uname IS NOT NULL and t.uname != '')
+        group by t.production_id, t.uname),
+        d as (
+        select t.production_id,
+        t.uname,
+        count(1) as dai_count,
+        sum(t.weight) as dai_weight
+        from t
+        where t.process &lt;= 2
+        group by t.production_id, t.uname),
+        y as (
+        select t.production_id,
+        t.uname,
+        count(1) as yi_count,
+        sum(t.weight) as yi_weight
+        from t
+        where t.process &gt;= 3
+        group by t.production_id, t.uname),
+        i as (
+        select a.production_id as id,
+        a.uname,
+        p.name,
+        a.all_count,
+        a.all_weight,
+        ifnull(d.dai_count, 0) as dai_count,
+        ifnull(d.dai_weight, 0) as dai_weight,
+        ifnull(y.yi_count, 0) as yi_count,
+        ifnull(y.yi_weight, 0) as yi_weight
+        from a
+        inner join sc_production p on a.production_id = p.id
+        <if test="specName != null and specName != ''">
+            and p.name like concat('%',#{specName},'%')
+        </if>
+        left join d on (a.production_id = d.production_id and a.uname = d.uname)
+        left join y on (a.production_id = y.production_id and a.uname = y.uname)
+
+        )(
+        select *
+        FROM (select *
+        from i
+        <choose>
+            <when test="orderBy != null and orderBy != ''">
+                order by ${orderBy}
+            </when>
+            <otherwise>
+                order by i.name
+            </otherwise>
+        </choose>
+        limit 9999999999999999999) as z
+        )
+        UNION
+        (SELECT '-1' as id,
+        '汇总' as uname,
+        '-' as name,
+        sum(i.all_count) as all_count,
+        sum(i.all_weight) as all_weight,
+        sum(i.dai_count) as dai_count,
+        sum(i.dai_weight) as dai_weight,
+        sum(i.yi_count) as yi_count,
+        sum(i.yi_weight) as yi_weight
+        FROM i
+        order by dai_count desc)
+    </select>
+
+    <!-- 下单统计 - 钻取子列表 -->
+    <select id="findXiaDanItemList" resultType="java.util.Map">
+        select sb.id,
+        so.agent_name,
+        sc.phone,
+        sc.username,
+        sc.address,
+        sp.name,
+        count(1) as count,
+        sb.weight
+        from sc_box sb
+        left join sc_order so on so.id = sb.order_id
+        left join sc_production sp on sb.production = sp.id
+        left join sc_custom sc on so.custom_id = sc.id
+        left join sc_box_item sbi on sb.id = sbi.box_id
+        where 1 = 1
+        <choose>
+            <when test="daiYiStatus == 1">
+                and sbi.process &lt;= 2
+            </when>
+            <otherwise>
+                and sbi.process &gt;= 3
+            </otherwise>
+        </choose>
+        <if test="specId != null and specId != ''">
+            and sp.id = #{specId}
+        </if>
+        <if test="specName != null and specName != ''">
+            and sp.name like concat('%',#{specName},'%')
+        </if>
+        <if test="agentName != null and agentName !=''">
+            and so.agent_name like concat('%',#{agentName},'%')
+        </if>
+        <if test="beginDate != null and beginDate != ''">
+            and date_format(sbi.create_date, '%Y-%m-%d') &gt;= date_format(#{beginDate}, '%Y-%m-%d')
+        </if>
+        <if test="endDate != null and endDate != ''">
+            and date_format(sbi.create_date, '%Y-%m-%d') &lt;= date_format(#{endDate}, '%Y-%m-%d')
+        </if>
+        group by sb.id,
+        so.agent_name,
+        sc.phone,
+        sc.username,
+        sc.address,
+        sp.name,
+        sb.weight
+    </select>
+
+    <!--    出货统计 主表 -->
+    <select id="findChuHuoReportList" resultType="java.util.Map">
+        with t as (select sbi.id,
+        sb.production as production_id,
+        sb.weight,
+        sbi.process
+        from sc_box_item sbi
+        inner join sc_box sb on sb.id = sbi.box_id
+        inner join sc_order so on so.id = sb.order_id
+        where (so.agent_name is not null and so.agent_name != '')
+        <if test="officeId !=null and officeId !=''">
+            and so.factory_id = #{officeId}
+        </if>
+        <if test="beginDate !=null and beginDate !=''">
+            and date_format(sbi.create_date, '%Y-%m-%d') &gt;= date_format(#{beginDate}, '%Y-%m-%d')
+        </if>
+        <if test="endDate !=null and endDate !=''">
+            and date_format(sbi.create_date, '%Y-%m-%d') &lt;= date_format(#{endDate}, '%Y-%m-%d')
+        </if>
+        group by sbi.id,
+        sb.production,
+        sb.weight,
+        sbi.process
+        ),
+        a as (
+        select t.production_id,
+        count(1) as all_count,
+        sum(t.weight) as all_weight
+        from t
+        group by t.production_id),
+        d as (
+        select t.production_id,
+        count(1) as dai_count,
+        sum(t.weight) as dai_weight
+        from t
+        where t.process &lt;= 2
+        group by t.production_id),
+        y as (
+        select t.production_id,
+        count(1) as yi_count,
+        sum(t.weight) as yi_weight
+        from t
+        where t.process &gt;= 3
+        group by t.production_id),
+        i as (
+        select a.production_id as id,
+        p.name,
+        a.all_count,
+        a.all_weight,
+        ifnull(d.dai_count, 0) as dai_count,
+        ifnull(y.yi_count, 0) as yi_count,
+        ifnull(d.dai_weight, 0) as dai_weight,
+        ifnull(y.yi_weight, 0) as yi_weight
+        from a
+        inner join sc_production p on a.production_id = p.id
+        <if test="specName !=null and specName !=''">
+            and p.name like concat('%',#{specName},'%')
+        </if>
+        left join d on a.production_id = d.production_id
+        left join y on a.production_id = y.production_id
+        )
+        (select *
+        from (select *
+        from i
+        <choose>
+            <when test="orderBy !=null and orderBy !=''">
+                order by ${orderBy}
+            </when>
+            <otherwise>
+                order by `name`
+            </otherwise>
+        </choose>
+        limit 9999999999999999999) as ii)
+        union all
+        (select -1 as id,
+        '汇总' as name,
+        sum(i.all_count) as all_count,
+        sum(i.all_weight) as all_weight,
+        sum(i.dai_count) as dai_count,
+        sum(i.yi_count) as yi_count,
+        sum(i.dai_weight) as dai_weight,
+        sum(i.yi_weight) as yi_weight
+        from i)
+
+
+    </select>
+    <select id="findChuHuoItemList" resultType="java.util.Map">
+        select sb.id,
+        so.agent_name,
+        sc.phone,
+        sc.username,
+        sc.address,
+        sp.name,
+        count(sbi.id)as count,
+        sb.weight
+        from sc_box sb
+        left join sc_order so on so.id = sb.order_id
+        left join sc_production sp on sb.production = sp.id
+        left join sc_custom sc on so.custom_id = sc.id
+        left join sc_box_item sbi on sb.id = sbi.box_id
+        where 1 = 1
+        <choose>
+            <when test="daiYiStatus == '1'.toString()">
+                and sbi.process &lt;= 2
+            </when>
+            <otherwise>
+                and sbi.process &gt;= 3
+            </otherwise>
+        </choose>
+        <if test="officeId !=null and officeId !=''">
+            and so.factory_id = #{officeId}
+        </if>
+        <if test="specId !=null and specId !=''">
+            and sp.id = #{specId}
+        </if>
+        <if test="beginDate !=null and beginDate !=''">
+            and date_format(sbi.create_date, '%Y-%m-%d') &gt;= date_format(#{beginDate}, '%Y-%m-%d')
+        </if>
+        <if test="endDate !=null and endDate !=''">
+            and date_format(sbi.create_date, '%Y-%m-%d') &lt;= date_format(#{endDate}, '%Y-%m-%d')
+        </if>
+        group by sb.id,
+        so.agent_name,
+        sc.phone,
+        sc.username,
+        sc.address,
+        sp.name,
+        sb.weight
+    </select>
+
+    <select id="findCaiWuList" resultType="java.util.Map">
+        WITH t0 AS (
+        SELECT so.agent_name,
+        DATE_FORMAT(so.deliver_date, '%Y-%m-%d') AS deliver_date,
+        SUM(so.will_pay_price)                   AS will_pay_price
+        FROM sc_order so
+        INNER JOIN sc_custom sc ON so.custom_id = sc.id
+        WHERE so.agent_name IS NOT NULL
+        AND so.agent_name != ''
+        <if test="agentName !=null and agentName !=''">
+            AND so.agent_name LIKE CONCAT('%',#{agentName}, '%')
+        </if>
+        <if test="officeId !=null and officeId !=''">
+            AND so.factory_id = #{officeId}
+        </if>
+        <if test="beginDate !=null and beginDate !=''">
+            AND DATE_FORMAT(so.deliver_date, '%Y-%m-%d') &gt;= DATE_FORMAT(#{beginDate}, '%Y-%m-%d')
+        </if>
+        <if test="endDate !=null and endDate !=''">
+            AND DATE_FORMAT(so.deliver_date, '%Y-%m-%d') &lt;= DATE_FORMAT(#{endDate}, '%Y-%m-%d')
+        </if>
+        GROUP BY so.agent_name, DATE_FORMAT(so.deliver_date, '%Y-%m-%d')
+        ),
+        t1 AS (
+        SELECT so.agent_name,
+        DATE_FORMAT(so.deliver_date, '%Y-%m-%d')                       AS deliver_date,
+        ROUND(SUM((sb.single_price * sb.weight) + sb.logistics_price)) AS deliver_pay_price
+        FROM sc_order so
+        INNER JOIN sc_custom sc ON so.custom_id = sc.id
+        LEFT JOIN sc_box sb ON so.id = sb.order_id
+        LEFT JOIN sc_box_item sbi ON sb.id = sbi.box_id
+        WHERE so.agent_name IS NOT NULL
+        AND so.agent_name != ''
+        AND sbi.process >= 4
+        <if test="agentName !=null and agentName !=''">
+            AND so.agent_name LIKE CONCAT('%',#{agentName}, '%')
+        </if>
+        <if test="officeId !=null and officeId !=''">
+            AND so.factory_id = #{officeId}
+        </if>
+        <if test="beginDate !=null and beginDate !=''">
+            AND DATE_FORMAT(so.deliver_date, '%Y-%m-%d') &gt;= DATE_FORMAT(#{beginDate}, '%Y-%m-%d')
+        </if>
+        <if test="endDate !=null and endDate !=''">
+            AND DATE_FORMAT(so.deliver_date, '%Y-%m-%d') &lt;= DATE_FORMAT(#{endDate}, '%Y-%m-%d')
+        </if>
+        GROUP BY so.agent_name, DATE_FORMAT(so.deliver_date, '%Y-%m-%d')
+        ),
+        t2 AS (
+        SELECT sf.*
+        FROM sc_finance sf
+        <if test="officeId !=null and officeId !=''">
+            WHERE sf.factory_id = #{officeId}
+        </if>
+        ),
+        i as (
+        SELECT t0.agent_name,
+        t0.deliver_date,
+        t0.will_pay_price,
+        IFNULL(t1.deliver_pay_price, 0) AS deliver_pay_price,
+        IFNULL(t2.real_pay_price, 0)    AS real_pay_price,
+        u.name                          as pay_user_name,
+        t2.pay_date
+        FROM t0
+        LEFT JOIN t1
+        ON (t0.agent_name = t1.agent_name AND t0.deliver_date = t1.deliver_date)
+        LEFT JOIN t2
+        ON (t0.agent_name = t2.agent_name AND t0.deliver_date = t2.deliver_date)
+        LEFT JOIN sys_user u
+        ON t2.pay_by = u.id
+        <where>
+            <choose>
+                <when test="payStatus == '1'.toString()">
+                    IFNULL(t2.real_pay_price, 0) != 0 /*已付款*/
+                </when>
+                <when test="payStatus == '2'.toString()">
+                    IFNULL(t2.real_pay_price, 0) = 0 /*未付款*/
+                </when>
+                <otherwise>
+                    1=1 /*全部*/
+                </otherwise>
+            </choose>
+        </where>
+        ) (select *
+        FROM (
+        SELECT *
+        FROM i
+        <choose>
+            <when test="orderBy !=null and orderBy !=''">
+                ORDER BY ${orderBy}
+            </when>
+            <otherwise>
+                ORDER BY will_pay_price DESC, real_pay_price DESC
+            </otherwise>
+        </choose>
+        LIMIT 9999999999999999999) ii
+        )
+        UNION all
+        (select '汇总'                     as agent_name,
+        '-'                      as deliver_date,
+        sum(i.will_pay_price)    as will_pay_price,
+        sum(i.deliver_pay_price) as deliver_pay_price,
+        sum(i.real_pay_price)    as real_pay_price,
+        '-'                      as pay_user_name,
+        '-'                      as pay_date
+        FROM i)
+
+    </select>
+    <select id="findCaiWuItemList" resultType="java.util.Map">
+        select so.id as order_id,
+               sb.id,
+        so.agent_name,
+        sc.phone,
+        sc.username,
+        sc.address,
+        sp.name,
+        ifnull(sb.count, 0) as count,
+        ifnull(sb.weight, 0) as weight,
+        ifnull(sb.single_price, 0) as singlePrice,
+        ifnull(sb.total_price, 0) as totalPrice,
+        ifnull(sb.logistics_price, 0) as logisticsPrice,
+        ifnull(sb.logistics_total_price, 0) as logisticsTotalPrice
+        from sc_box sb
+        left join sc_order so on so.id = sb.order_id
+        left join sc_production sp on sb.production = sp.id
+        left join sc_custom sc on so.custom_id = sc.id
+        WHERE so.agent_name IS NOT NULL
+        AND so.agent_name != ''
+        <if test="agentName !=null and agentName !=''">
+            AND so.agent_name = #{agentName}
+        </if>
+        <if test="officeId !=null and officeId !=''">
+            AND so.factory_id = #{officeId}
+        </if>
+        <if test="date !=null and date !=''">
+            AND DATE_FORMAT(so.deliver_date, '%Y-%m-%d') = DATE_FORMAT(#{date}, '%Y-%m-%d')
+        </if>
+        group by so.id,
+        sb.id,
+        so.agent_name,
+        sc.phone,
+        sc.username,
+        sc.address,
+        sp.name,
+        sb.count,
+        sb.weight,
+        sb.single_price,
+        sb.total_price,
+        sb.logistics_price,
+        sb.logistics_total_price
+        order by total_price DESC ,logistics_total_price DESC
+    </select>
+    <!--    工厂物流统计 主表 -->
+    <select id="findFactoryWuLiuList" resultType="java.util.Map">
+        with t1 as (select o.id as logistics_id,
+        o.name as logistics_name,
+        so.factory_id,
+        o1.name as factory_name,
+        so.logistics_remarks as logistics_remarks,
+        date_format(sbi.logistics_date, '%Y-%m-%d') as logistics_date,
+        count(1) as count,
+        sum(sb.logistics_price) as will_pay_price
+        from sc_box_item sbi
+        left join sc_box sb on sb.id = sbi.box_id
+        left join sc_order so on so.id = sb.order_id
+        left join sys_user u on u.id = sbi.logistics_user_id
+        left join sys_office o on o.id = u.company_id
+        left join sys_office o1 on o1.id = so.factory_id
+        where so.agent_name is not null
+        and so.agent_name != ''
+        <if test="officeId !=null and officeId !=''">
+            AND so.factory_id = #{officeId}
+        </if>
+        <if test="logisticsName !=null and logisticsName !=''">
+            and o.name like concat('%', #{logisticsName}, '%')
+        </if>
+        <if test="beginDate !=null and beginDate !=''">
+            AND DATE_FORMAT(sbi.logistics_date, '%Y-%m-%d') &gt;= DATE_FORMAT(#{beginDate}, '%Y-%m-%d')
+        </if>
+        <if test="endDate !=null and endDate !=''">
+            AND DATE_FORMAT(sbi.logistics_date, '%Y-%m-%d') &lt;= DATE_FORMAT(#{endDate}, '%Y-%m-%d')
+        </if>
+        group by o.id,
+        o.name,
+        so.factory_id,
+        o1.name,
+        so.logistics_remarks,
+        date_format(sbi.logistics_date, '%Y-%m-%d')
+        ),
+        t2 as (
+        select *
+        from sc_finance_logistics sfl
+        where 1=1
+        <if test="officeId !=null and officeId !=''">
+            AND sfl.factory_id = #{officeId}
+        </if>
+        ),
+        i as (
+        select t1.*,
+        ifnull(t2.real_pay_price, 0) as real_pay_price,
+        u.name pay_user_name,
+        t2.pay_date
+        from t1
+        left join t2 on (
+        t1.factory_id = t2.factory_id
+        and t1.logistics_id = t2.logistics_id
+        and t1.logistics_date = t2.logistics_date)
+        left join sys_user u on t2.pay_by = u.id
+        <where>
+            <choose>
+                <when test="payStatus == '1'.toString()">
+                    IFNULL(t2.real_pay_price, 0) != 0 /*已付款*/
+                </when>
+                <when test="payStatus == '2'.toString()">
+                    IFNULL(t2.real_pay_price, 0) = 0 /*未付款*/
+                </when>
+                <otherwise>
+                    1=1 /*全部*/
+                </otherwise>
+            </choose>
+        </where>
+        )
+        (select *
+        from (select *
+        from i
+        <choose>
+            <when test="orderBy !=null and orderBy !=''">
+                ORDER BY ${orderBy}
+            </when>
+            <otherwise>
+                order by will_pay_price desc, real_pay_price asc
+            </otherwise>
+        </choose>
+        limit 9999999999999999999) ii)
+        union all
+        (select '-' as logistics_id,
+        '-' as logistics_name,
+        '-' as factory_id,
+        '-' as factory_name,
+        '-' as logistics_remarks,
+        '汇总' as logistics_date,
+        sum(i.count) as count,
+        sum(i.will_pay_price) as will_pay_price,
+        sum(i.real_pay_price) as real_pay_price,
+        '-' as pay_user_name,
+        '-' as pay_date
+        from i)
+    </select>
+    <!--    工厂物流统计  子列表 -->
+    <select id="findFactoryWuLiuItemList" resultType="java.util.Map">
+        select sc.phone,
+        sc.username,
+        sc.address,
+        sp.name,
+        count(1) as count,
+        sum(sb.logistics_price) logistics_price
+        from sc_box_item sbi
+        left join sc_box sb on sb.id = sbi.box_id
+        left join sc_order so on so.id = sb.order_id
+        left join sc_production sp on sb.production = sp.id
+        left join sc_custom sc on so.custom_id = sc.id
+        left join sys_user u on u.id = sbi.logistics_user_id
+        left join sys_office o on o.id = u.company_id
+        where so.agent_name is not null
+        and so.agent_name != ''
+        <if test="officeId !=null and officeId !=''">
+            AND so.factory_id = #{officeId}
+        </if>
+        <if test="logisticsName !=null and logisticsName !=''">
+            and o.name like concat('%', #{logisticsName}, '%')
+        </if>
+        <if test="date !=null and date !=''">
+            AND DATE_FORMAT(sbi.logistics_date, '%Y-%m-%d') = DATE_FORMAT(#{date}, '%Y-%m-%d')
+        </if>
+        group by sc.phone,
+        sc.username,
+        sc.address,
+        sp.name
+        <choose>
+            <when test="orderBy !=null and orderBy !=''">
+                ORDER BY ${orderBy}
+            </when>
+            <otherwise>
+                order by logistics_price desc
+            </otherwise>
+        </choose>
+    </select>
+    <!--    物流账户下的 物流费用管理 主表-->
+    <select id="findWuLiuList" resultType="java.util.Map">
+        with t1 as (select o.id as logistics_id,
+        o.name as logistics_name,
+        so.factory_id,
+        o1.name as factory_name,
+        date_format(sbi.logistics_date, '%Y-%m-%d') as logistics_date,
+        count(1) as count,
+        sum(sb.logistics_price) as will_pay_price
+        from sc_box_item sbi
+        left join sc_box sb on sb.id = sbi.box_id
+        left join sc_order so on so.id = sb.order_id
+        left join sys_user u on u.id = sbi.logistics_user_id
+        left join sys_office o on o.id = u.company_id
+        left join sys_office o1 on o1.id = so.factory_id
+        where so.agent_name is not null
+        and so.agent_name != ''
+        <choose>
+            <when test="diaoStatus == '1'.toString()">
+                and (so.logistics_remarks is null or so.logistics_remarks = '')
+            </when>
+            <when test="diaoStatus == '2'.toString()">
+                and (so.logistics_remarks is not null and so.logistics_remarks != '')
+            </when>
+            <otherwise>
+                 /*全部*/
+            </otherwise>
+        </choose>
+        <if test="officeId !=null and officeId !=''">
+            AND o.id = #{officeId}
+        </if>
+        <if test="factoryName !=null and factoryName !=''">
+            and o1.name like concat('%', #{factoryName}, '%')
+        </if>
+        <if test="beginDate !=null and beginDate !=''">
+            AND DATE_FORMAT(sbi.logistics_date, '%Y-%m-%d') &gt;= DATE_FORMAT(#{beginDate}, '%Y-%m-%d')
+        </if>
+        <if test="endDate !=null and endDate !=''">
+            AND DATE_FORMAT(sbi.logistics_date, '%Y-%m-%d') &lt;= DATE_FORMAT(#{endDate}, '%Y-%m-%d')
+        </if>
+        group by o.id,
+        o.name,
+        so.factory_id,
+        o1.name,
+        date_format(sbi.logistics_date, '%Y-%m-%d')
+        ),
+        t2 as (
+        select *
+        from sc_finance_logistics sfl
+        where 1=1
+        <if test="officeId !=null and officeId !=''">
+            AND sfl.factory_id = #{officeId}
+        </if>
+        ),
+        i as (
+        select t1.*,
+        ifnull(t2.real_pay_price, 0) as real_pay_price,
+        u.name pay_user_name,
+        t2.pay_date
+        from t1
+        left join t2 on (
+        t1.factory_id = t2.factory_id
+        and t1.logistics_id = t2.logistics_id
+        and t1.logistics_date = t2.logistics_date)
+        left join sys_user u on t2.pay_by = u.id
+        <where>
+            <choose>
+                <when test="payStatus == '1'.toString()">
+                    IFNULL(t2.real_pay_price, 0) != 0 /*已付款*/
+                </when>
+                <when test="payStatus == '2'.toString()">
+                    IFNULL(t2.real_pay_price, 0) = 0 /*未付款*/
+                </when>
+                <otherwise>
+                    1=1 /*全部*/
+                </otherwise>
+            </choose>
+        </where>
+        )
+        (select *
+        from (select *
+        from i
+        <choose>
+            <when test="orderBy !=null and orderBy !=''">
+                ORDER BY ${orderBy}
+            </when>
+            <otherwise>
+                order by will_pay_price desc, real_pay_price asc
+            </otherwise>
+        </choose>
+        limit 9999999999999999999) ii)
+        union all
+        (select '-' as logistics_id,
+        '-' as logistics_name,
+        '-' as factory_id,
+        '-' as factory_name,
+        '汇总' as logistics_date,
+        sum(i.count) as count,
+        sum(i.will_pay_price) as will_pay_price,
+        sum(i.real_pay_price) as real_pay_price,
+        '-' as pay_user_name,
+        '-' as pay_date
+        from i)
+    </select>
+    <!--    物流账户下的 物流费用管理 子列表-->
+    <select id="findWuLiuItemList" resultType="java.util.Map">
+        select sc.phone,
+        sc.username,
+        sc.address,
+        count(1) as count,
+        sum(sb.logistics_price) logistics_price
+        from sc_box_item sbi
+        left join sc_box sb on sb.id = sbi.box_id
+        left join sc_order so on so.id = sb.order_id
+        left join sc_custom sc on so.custom_id = sc.id
+        left join sys_user u on u.id = sbi.logistics_user_id
+        left join sys_office o on o.id = u.company_id
+        left join sys_office o1 on o1.id = so.factory_id
+        where so.agent_name is not null
+        and so.agent_name != ''
+        <choose>
+            <when test="diaoStatus == '1'.toString()">
+                and (so.logistics_remarks is null or so.logistics_remarks = '')
+            </when>
+            <when test="diaoStatus == '2'.toString()">
+                and (so.logistics_remarks is not null and so.logistics_remarks != '')
+            </when>
+            <otherwise>
+                /*全部*/
+            </otherwise>
+        </choose>
+        <if test="officeId !=null and officeId !=''">
+            AND o.id = #{officeId}
+        </if>
+        <if test="factoryName !=null and factoryName !=''">
+            and o1.name like concat('%', #{factoryName}, '%')
+        </if>
+        <if test="date !=null and date !=''">
+            AND DATE_FORMAT(sbi.logistics_date, '%Y-%m-%d') = DATE_FORMAT(#{date}, '%Y-%m-%d')
+        </if>
+        group by sc.phone,
+        sc.username,
+        sc.address
+        <choose>
+            <when test="orderBy !=null and orderBy !=''">
+                ORDER BY ${orderBy}
+            </when>
+            <otherwise>
+                order by logistics_price desc
+            </otherwise>
+        </choose>
+    </select>
+    <!--    保存 某个代理人 某天的 实付金额-->
+    <insert id="saveOrUpdateRealPayPrice">
+        insert into sc_finance(agent_name,
+                               factory_id,
+                               deliver_date,
+                               real_pay_price,
+                               pay_by,
+                               pay_date)
+            value (
+                   #{agent_name},
+                   #{officeId},
+                   DATE_FORMAT(#{deliver_date}, '%Y-%m-%d'),
+                   #{real_pay_price},
+                   #{payUserId},
+                   #{payDate}
+            )
+        on duplicate key
+            update real_pay_price = values(real_pay_price),
+                   pay_date       = values(pay_date)
+    </insert>
+
+
+    <!-- 保存 工厂或物流公司  物流费用的实付金额 -->
+    <insert id="saveOrUpdateWuLiuPayPrice">
+        insert into sc_finance_logistics(logistics_id,
+                                         factory_id,
+                                         logistics_date,
+                                         real_pay_price,
+                                         pay_by,
+                                         pay_date)
+            value (
+                   #{logistics_id},
+                   #{factory_id},
+                   DATE_FORMAT(#{logistics_date}, '%Y-%m-%d'),
+                   #{real_pay_price},
+                   #{payUserId},
+                   #{payDate}
+            )
+        on duplicate key
+            update real_pay_price = values(real_pay_price)
+    </insert>
+
+</mapper>

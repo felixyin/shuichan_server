@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeeplus.modules.production.mapper.ScProductionCategoryMapper">
+
+    <resultMap id="scProductionCategoryResult" type="ScProductionCategory">
+        <result property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="sort" column="sort"/>
+        <result property="parentIds" column="parentIds"/>
+        <association property="hasChildren" column="id" select="hasChildren"/>
+    </resultMap>
+
+    <sql id="scProductionCategoryColumns">
+		a.id AS "id",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+		a.name AS "name",
+		a.office_id AS "office.id",
+		a.parent_id AS "parent.id",
+		a.parent_ids AS "parentIds",
+		a.sort AS "sort",
+				
+				
+				
+				
+				
+				
+				
+				
+		office.name AS "office.name"
+	</sql>
+
+
+    <sql id="scProductionCategoryJoins">
+		
+		LEFT JOIN sys_office office ON office.id = a.office_id
+	</sql>
+
+
+    <select id="get" resultType="ScProductionCategory">
+        SELECT
+        <include refid="scProductionCategoryColumns"/>
+        FROM sc_production_category a
+        <include refid="scProductionCategoryJoins"/>
+        WHERE a.id = #{id}
+    </select>
+
+    <select id="findList" resultType="ScProductionCategory">
+        SELECT
+        <include refid="scProductionCategoryColumns"/>
+        FROM sc_production_category a
+        <include refid="scProductionCategoryJoins"/>
+        <where>
+            a.del_flag = #{DEL_FLAG_NORMAL}
+            ${dataScope}
+            <if test="name != null and name != ''">
+                AND a.name LIKE
+                <if test="dbName == 'oracle'">'%'||#{name}||'%'</if>
+                <if test="dbName == 'mssql'">'%'+#{name}+'%'</if>
+                <if test="dbName == 'mysql'">concat('%',#{name},'%')</if>
+            </if>
+            <if test="office != null and office.id != null and office.id != ''">
+                AND a.office_id = #{office.id}
+            </if>
+            <if test="parent != null and parent.id != null and parent.id != ''">
+                AND a.parent_id = #{parent.id}
+            </if>
+            <if test="parentIds != null and parentIds != ''">
+                AND a.parent_ids LIKE
+                <if test="dbName == 'oracle'">'%'||#{parentIds}||'%'</if>
+                <if test="dbName == 'mssql'">'%'+#{parentIds}+'%'</if>
+                <if test="dbName == 'mysql'">concat('%',#{parentIds},'%')</if>
+            </if>
+        </where>
+        ORDER BY a.sort ASC
+    </select>
+
+    <select id="findAllList" resultType="ScProductionCategory">
+        SELECT
+        <include refid="scProductionCategoryColumns"/>
+        FROM sc_production_category a
+        <include refid="scProductionCategoryJoins"/>
+        <where>
+            a.del_flag = #{DEL_FLAG_NORMAL}
+            ${dataScope}
+        </where>
+        ORDER BY a.sort ASC
+    </select>
+
+    <select id="getChildren" parameterType="String" resultMap="scProductionCategoryResult">
+        select * from sc_production_category where parent_id = #{id} ORDER BY sort 
+    </select>
+
+    <select id="hasChildren" parameterType="String" resultType="Boolean">  
+        select case when exists(select 1 from sc_production_category where parent_id = #{id}) then 1 else 0 end ${dual}
+    </select>
+
+    <select id="findByParentIdsLike" resultType="ScProductionCategory">
+        SELECT
+        a.id,
+        a.parent_id AS "parent.id",
+        a.parent_ids
+        FROM sc_production_category a
+        <include refid="scProductionCategoryJoins"/>
+        <where>
+            a.del_flag = #{DEL_FLAG_NORMAL}
+            AND a.parent_ids LIKE #{parentIds}
+        </where>
+        ORDER BY a.sort ASC
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+		INSERT INTO sc_production_category(
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag,
+			name,
+			office_id,
+			parent_id,
+			parent_ids,
+			sort
+		) VALUES (
+			#{createBy.id},
+			#{createDate},
+			#{updateBy.id},
+			#{updateDate},
+			#{remarks},
+			#{delFlag},
+			#{name},
+			#{office.id},
+			#{parent.id},
+			#{parentIds},
+			#{sort}
+		)
+	</insert>
+
+    <update id="update">
+		UPDATE sc_production_category SET 	
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			remarks = #{remarks},
+			name = #{name},
+			office_id = #{office.id},
+			parent_id = #{parent.id},
+			parent_ids = #{parentIds},
+			sort = #{sort}
+		WHERE id = #{id}
+	</update>
+
+    <update id="updateParentIds">
+		UPDATE sc_production_category SET 
+			parent_id = #{parent.id}, 
+			parent_ids = #{parentIds}
+		WHERE id = #{id}
+	</update>
+
+    <!--物理删除-->
+    <update id="delete">
+        DELETE FROM sc_production_category
+        WHERE id = #{id} OR parent_ids LIKE
+        <if test="dbName == 'oracle'">'%,'||#{id}||',%'</if>
+        <if test="dbName == 'mssql'">'%,'+#{id}+',%'</if>
+        <if test="dbName == 'mysql'">CONCAT('%,', #{id}, ',%')</if>
+    </update>
+
+    <!--逻辑删除-->
+    <update id="deleteByLogic">
+        UPDATE sc_production_category SET
+        del_flag = #{DEL_FLAG_DELETE}
+        WHERE id = #{id} OR parent_ids LIKE
+        <if test="dbName == 'oracle'">'%,'||#{id}||',%'</if>
+        <if test="dbName == 'mssql'">'%,'+#{id}+',%'</if>
+        <if test="dbName == 'mysql'">CONCAT('%,', #{id}, ',%')</if>
+    </update>
+
+</mapper>

@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeeplus.modules.production.mapper.ScProductionMapper">
+
+    <sql id="scProductionColumns">
+        a.id AS "id",
+		a.prod_categ_id AS "productionCategory.id",
+		a.name AS "name",
+		a.last_unit_price AS "lastUnitPrice",
+		a.office_id AS "office.id",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.del_flag AS "delFlag",
+		a.remarks AS "remarks",
+		b.name AS "productionCategory.name",
+		office.name AS "office.name"
+    </sql>
+
+    <sql id="scProductionJoins">
+        LEFT JOIN sc_production_category b ON b.id = a.prod_categ_id
+		LEFT JOIN sys_office office ON office.id = a.office_id
+    </sql>
+
+
+    <select id="get" resultType="ScProduction">
+        SELECT
+        <include refid="scProductionColumns"/>
+        FROM sc_production a
+        <include refid="scProductionJoins"/>
+        WHERE a.id = #{id}
+    </select>
+
+    <select id="findList" resultType="ScProduction">
+        SELECT
+        <include refid="scProductionColumns"/>
+        FROM sc_production a
+        <include refid="scProductionJoins"/>
+        <where>
+            a.del_flag = #{DEL_FLAG_NORMAL}
+            ${dataScope}
+            <if test="productionCategory != null  and productionCategory.id != null and productionCategory.id != ''">
+                AND (b.id = #{productionCategory.id} OR b.parent_ids LIKE
+                <if test="dbName == 'oracle'">'%,'||#{productionCategory.id}||',%')</if>
+                <if test="dbName == 'mysql'">CONCAT('%,', #{productionCategory.id}, ',%'))</if>
+                <if test="dbName == 'mssql'">'%'+#{productionCategory.id}+'%')</if>
+            </if>
+            <if test="name != null and name != ''">
+                AND a.name LIKE
+                <if test="dbName == 'oracle'">'%'||#{name}||'%'</if>
+                <if test="dbName == 'mssql'">'%'+#{name}+'%'</if>
+                <if test="dbName == 'mysql'">concat('%',#{name},'%')</if>
+            </if>
+            <if test="beginLastUnitPrice != null and endLastUnitPrice != null ">
+                AND a.last_unit_price BETWEEN #{beginLastUnitPrice} AND #{endLastUnitPrice}
+            </if>
+            <if test="office != null and office.id != null and office.id != ''">
+                AND a.office_id = #{office.id}
+            </if>
+        </where>
+        <choose>
+            <when test="page !=null and page.orderBy != null and page.orderBy != ''">
+                ORDER BY ${page.orderBy}
+            </when>
+            <otherwise>
+                ORDER BY a.create_date ASC
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="findAllList" resultType="ScProduction">
+        SELECT
+        <include refid="scProductionColumns"/>
+        FROM sc_production a
+        <include refid="scProductionJoins"/>
+        <where>
+            a.del_flag = #{DEL_FLAG_NORMAL}
+            ${dataScope}
+        </where>
+        <choose>
+            <when test="page !=null and page.orderBy != null and page.orderBy != ''">
+                ORDER BY ${page.orderBy}
+            </when>
+            <otherwise>
+                ORDER BY a.create_date ASC
+            </otherwise>
+        </choose>
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sc_production(prod_categ_id,
+                                  name,
+                                  last_unit_price,
+                                  office_id,
+                                  create_by,
+                                  create_date,
+                                  update_by,
+                                  update_date,
+                                  del_flag,
+                                  remarks,
+                                  py_first,
+                                  py)
+        VALUES (#{productionCategory.id},
+                #{name},
+                #{lastUnitPrice},
+                #{office.id},
+                #{createBy.id},
+                #{createDate},
+                #{updateBy.id},
+                #{updateDate},
+                #{delFlag},
+                #{remarks},
+                #{pyFirst},
+                #{py})
+    </insert>
+
+    <update id="update">
+        UPDATE sc_production
+        SET prod_categ_id   = #{productionCategory.id},
+            name            = #{name},
+            last_unit_price = #{lastUnitPrice},
+            office_id       = #{office.id},
+            update_by       = #{updateBy.id},
+            update_date     = #{updateDate},
+            remarks         = #{remarks},
+            py_first        = #{pyFirst},
+            py              = #{py}
+        WHERE id = #{id}
+    </update>
+
+
+    <!--物理删除-->
+    <update id="delete">
+        DELETE FROM sc_production
+        <choose>
+            <when test="id !=null and id != ''">
+                WHERE id = #{id}
+            </when>
+            <otherwise>
+                WHERE prod_categ_id = #{productionCategory.id}
+            </otherwise>
+        </choose>
+    </update>
+
+    <!--逻辑删除-->
+    <update id="deleteByLogic">
+        UPDATE sc_production SET
+        del_flag = #{DEL_FLAG_DELETE}
+        <choose>
+            <when test="id !=null and id != ''">
+                WHERE id = #{id}
+            </when>
+            <otherwise>
+                WHERE prod_categ_id = #{productionCategory.id}
+            </otherwise>
+        </choose>
+    </update>
+
+
+    <!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+    <select id="findUniqueByProperty" resultType="ScProduction" statementType="STATEMENT">
+        select *
+        FROM sc_production
+        where ${propertyName} = '${value}'
+    </select>
+
+</mapper>

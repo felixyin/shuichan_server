@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeeplus.modules.logicom.mapper.ScLogisticsPriceMapper">
+
+    <sql id="scLogisticsPriceColumns">
+		a.id AS "id",
+		a.logi_com_id AS "logisticsCompany.id",
+		a.gt_jin AS "gtJin",
+		a.lt_jin AS "ltJin",
+		a.price AS "price",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag"
+	</sql>
+
+    <sql id="scLogisticsPriceJoins">
+
+    </sql>
+
+
+    <select id="get" resultType="ScLogisticsPrice">
+        SELECT
+        <include refid="scLogisticsPriceColumns"/>
+        FROM sc_logistics_price a
+        <include refid="scLogisticsPriceJoins"/>
+        WHERE a.id = #{id}
+    </select>
+
+    <select id="findList" resultType="ScLogisticsPrice">
+        SELECT
+        <include refid="scLogisticsPriceColumns"/>
+        FROM sc_logistics_price a
+        <include refid="scLogisticsPriceJoins"/>
+        <where>
+            a.del_flag = #{DEL_FLAG_NORMAL}
+            ${dataScope}
+            <if test="price != null and price != ''">
+                AND a.price = #{price}
+            </if>
+        </where>
+        <choose>
+            <when test="page !=null and page.orderBy != null and page.orderBy != ''">
+                ORDER BY ${page.orderBy}
+            </when>
+            <otherwise>
+                ORDER BY a.create_date ASC
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="findAllList" resultType="ScLogisticsPrice">
+        SELECT
+        <include refid="scLogisticsPriceColumns"/>
+        FROM sc_logistics_price a
+        <include refid="scLogisticsPriceJoins"/>
+        <where>
+            a.del_flag = #{DEL_FLAG_NORMAL}
+            ${dataScope}
+        </where>
+        <choose>
+            <when test="page !=null and page.orderBy != null and page.orderBy != ''">
+                ORDER BY ${page.orderBy}
+            </when>
+            <otherwise>
+                ORDER BY a.create_date ASC
+            </otherwise>
+        </choose>
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+		INSERT INTO sc_logistics_price(
+			logi_com_id,
+			gt_jin,
+			lt_jin,
+			price,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag
+		) VALUES (
+			#{logisticsCompany.id},
+			#{gtJin},
+			#{ltJin},
+			#{price},
+			#{createBy.id},
+			#{createDate},
+			#{updateBy.id},
+			#{updateDate},
+			#{remarks},
+			#{delFlag}
+		)
+	</insert>
+
+    <update id="update">
+		UPDATE sc_logistics_price SET 	
+			logi_com_id = #{logisticsCompany.id},
+			gt_jin = #{gtJin},
+			lt_jin = #{ltJin},
+			price = #{price},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+
+
+    <!--物理删除-->
+    <update id="delete">
+		DELETE FROM sc_logistics_price
+	</update>
+
+    <!--逻辑删除-->
+    <update id="deleteByLogic">
+		UPDATE sc_logistics_price SET 
+			del_flag = #{DEL_FLAG_DELETE}
+	</update>
+
+
+    <!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+    <select id="findUniqueByProperty" resultType="ScLogisticsPrice" statementType="STATEMENT">
+		select * FROM sc_logistics_price  where ${propertyName} = '${value}'
+	</select>
+
+</mapper>
